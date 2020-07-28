@@ -42,6 +42,7 @@ impl Block {
 #[cfg(test)]
 mod block_tests {
     use super::*;
+    use hex;
 
     #[test]
     fn block_identity_test() {
@@ -77,5 +78,13 @@ mod block_tests {
         assert_eq!(mined.data, data);
         assert_eq!(mined.prev, block.hash);
         assert_eq!(mined.timestamp, ts);
+    }
+
+    #[test]
+    fn hash_test() {
+        assert_eq!(
+            hex::encode(Sha256::default().chain("foo").finalize()),
+            "2C26B46B68FFC68FF99B453C1D30413413422D706483BFA0F98A5E886266E7AE".to_lowercase()
+        )
     }
 }
