@@ -1,51 +1,100 @@
-use chrono::{DateTime, Utc};
+use crate::config::MINE_RATE;
+use chrono::{DateTime, Duration, Utc};
 use sha2::{Digest, Sha256};
 
+#[derive(Debug, PartialEq, Clone)]
 pub struct Block {
     // Headers
-    timestamp: DateTime<Utc>,
-    prev: String,
-    hash: String,
+    pub timestamp: DateTime<Utc>,
+    pub prev: String,
+    pub hash: String,
+    pub nonce: usize,
+    pub diff: usize,
     // Body
-    data: Vec<u8>,
+    pub data: Vec<u8>,
 }
 
 impl Block {
-    pub fn new(timestamp: &DateTime<Utc>, prev: String, hash: String, data: Vec<u8>) -> Self {
+    pub fn new(prev: String, hash: String, nonce: usize, diff: usize, data: Vec<u8>) -> Self {
         Self {
-            timestamp: timestamp.clone(),
+            timestamp: Utc::now(),
             prev,
             hash,
+            nonce,
+            diff,
             data,
         }
     }
 
-    pub fn genesis(timestamp: &DateTime<Utc>) -> Self {
+    pub fn genesis() -> Self {
         Self {
-            timestamp: timestamp.clone(),
+            timestamp: Utc::now(),
             prev: "gen-prev".to_owned(),
             hash: "gen-hash".to_owned(),
+            nonce: 0,
+            diff: 3,
             data: [0u8; 32].to_owned().to_vec(),
         }
     }
 
-    pub fn mine(prev: &Block, timestamp: &DateTime<Utc>, data: &Vec<u8>) -> Self {
+    pub fn mine(prev_block: &Block, data: &Vec<u8>) -> Self {
+        let mut timestamp = Utc::now();
+        let mut nonce = 0;
+        let mut diff = prev_block.diff;
+        let mut hash = Block::to_hash(&prev_block.hash, &timestamp, nonce, diff, data);
+
+        while hash[0..diff] != "0".repeat(diff) {
+            nonce += 1;
+            timestamp = Utc::now();
+            diff = Block::adjust_diff(prev_block, &timestamp);
+            hash = Block::to_hash(&prev_block.hash, &timestamp, nonce, diff, data);
+        }
+
         Self {
-            timestamp: timestamp.clone(),
-            prev: prev.hash.to_owned(),
-            hash: Block::to_hash(prev, timestamp, data),
+            timestamp,
+            prev: prev_block.hash.to_owned(),
+            hash,
+            nonce,
+            diff,
             data: data.to_owned(),
         }
     }
 
-    pub fn to_hash(prev: &Block, timestamp: &DateTime<Utc>, data: &Vec<u8>) -> String {
+    pub fn to_hash(
+        prev: &str,
+        timestamp: &DateTime<Utc>,
+        nonce: usize,
+        diff: usize,
+        data: &Vec<u8>,
+    ) -> String {
         hex::encode(
             Sha256::default()
                 .chain(timestamp.timestamp().to_le_bytes())
-                .chain(&prev.hash)
+                .chain(prev)
+                .chain(nonce.to_le_bytes())
+                .chain(diff.to_le_bytes())
                 .chain(data)
                 .finalize(),
         )
+    }
+
+    pub fn valid_hash(&self) -> bool {
+        self.hash
+            == Block::to_hash(
+                &self.prev,
+                &self.timestamp,
+                self.nonce,
+                self.diff,
+                &self.data,
+            )
+    }
+
+    pub fn adjust_diff(block: &Block, timestamp: &DateTime<Utc>) -> usize {
+        if &(block.timestamp + Duration::milliseconds(MINE_RATE)) > timestamp {
+            block.diff + 1
+        } else {
+            block.diff - 1
+        }
     }
 }
 
@@ -56,46 +105,49 @@ mod block_tests {
 
     #[test]
     fn block_identity_test() {
-        let ts = Utc::now();
         let block = Block::new(
-            &ts,
             "prevhash".to_owned(),
             "hash".to_owned(),
+            1,
+            1,
             [0u8; 32].to_owned().to_vec(),
         );
-        assert_eq!(block.timestamp, ts);
         assert_eq!(block.prev, "prevhash".to_owned());
         assert_eq!(block.hash, "hash".to_owned());
+        assert_eq!(block.nonce, 1);
+        assert_eq!(block.diff, 1);
         assert_eq!(block.data, [0u8; 32].to_owned().to_vec());
     }
 
     #[test]
     fn genesis_block_test() {
-        let ts = Utc::now();
-        let block = Block::genesis(&ts);
-        assert_eq!(block.timestamp, ts);
+        let block = Block::genesis();
         assert_eq!(block.prev, "gen-prev".to_owned());
         assert_eq!(block.hash, "gen-hash".to_owned());
+        assert_eq!(block.nonce, 0);
+        assert_eq!(block.diff, 3);
         assert_eq!(block.data, [0u8; 32].to_owned().to_vec());
     }
 
     #[test]
     fn mine_block_test() {
-        let ts = Utc::now();
-        let prev = Block::genesis(&ts);
+        let prev = Block::genesis();
         let data = "mined data".to_owned().into_bytes();
-        let mined = Block::mine(&prev, &ts, &data);
+        let mined = Block::mine(&prev, &data);
         let mined_hash = hex::encode(
             Sha256::default()
-                .chain(ts.timestamp().to_le_bytes())
+                .chain(mined.timestamp.timestamp().to_le_bytes())
                 .chain(&prev.hash)
+                .chain(mined.nonce.to_le_bytes())
+                .chain(mined.diff.to_le_bytes())
                 .chain(&data)
                 .finalize(),
         );
-        assert_eq!(mined.timestamp, ts);
         assert_eq!(mined.data, data);
         assert_eq!(mined.prev, prev.hash);
         assert_eq!(mined.hash, mined_hash);
+        println!("{}", mined.diff);
+        assert_eq!(mined.hash[0..mined.diff], "0".repeat(mined.diff))
     }
 
     #[test]
@@ -104,5 +156,49 @@ mod block_tests {
             hex::encode(Sha256::default().chain("foo").finalize()).to_uppercase(),
             "2C26B46B68FFC68FF99B453C1D30413413422D706483BFA0F98A5E886266E7AE"
         )
+    }
+
+    #[test]
+    fn increase_diff_for_next_block() {
+        let previous = Block::mine(&Block::genesis(), &vec![0, 0, 0]);
+
+        // previous timestamp + MINE_RATE is higher than timestamp + MINE_RATE + 100
+        // thus, the following block was quickly mined
+        // difficulty should be increased
+        assert_eq!(
+            Block::adjust_diff(
+                &previous,
+                &(previous.timestamp + Duration::milliseconds(MINE_RATE)
+                    - Duration::milliseconds(100))
+            ),
+            previous.diff + 1
+        );
+    }
+
+    #[test]
+    fn decrease_diff_for_next_block() {
+        let previous = Block::mine(&Block::genesis(), &vec![0, 0, 0]);
+
+        // previous timestamp + MINE_RATE is lower than timestamp + MINE_RATE - 100
+        // thus, the following block was slowly mined
+        // difficulty should be decreased
+        assert_eq!(
+            Block::adjust_diff(
+                &previous,
+                &(previous.timestamp
+                    + Duration::milliseconds(MINE_RATE)
+                    + Duration::milliseconds(100))
+            ),
+            previous.diff - 1
+        );
+    }
+
+    #[test]
+    fn block_adjusts_diff() {
+        let previous = Block::mine(&Block::genesis(), &vec![0, 0, 0]);
+        let next = Block::mine(&previous, &vec![0, 0, 0]);
+        let next_possible_diffs = vec![previous.diff + 1, previous.diff - 1];
+
+        assert!(next_possible_diffs.contains(&next.diff));
     }
 }
