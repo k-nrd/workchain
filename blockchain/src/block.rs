@@ -67,14 +67,15 @@ impl Block {
         diff: usize,
         data: &Vec<u8>,
     ) -> String {
-        hex::encode(
+        format!(
+            "{:X}",
             Sha256::default()
                 .chain(timestamp.timestamp().to_le_bytes())
                 .chain(prev)
                 .chain(nonce.to_le_bytes())
                 .chain(diff.to_le_bytes())
                 .chain(data)
-                .finalize(),
+                .finalize()
         )
     }
 
@@ -101,7 +102,6 @@ impl Block {
 #[cfg(test)]
 mod block_tests {
     use super::*;
-    use hex;
 
     #[test]
     fn block_identity_test() {
@@ -134,7 +134,8 @@ mod block_tests {
         let prev = Block::genesis();
         let data = "mined data".to_owned().into_bytes();
         let mined = Block::mine(&prev, &data);
-        let mined_hash = hex::encode(
+        let mined_hash = format!(
+            "{:X}",
             Sha256::default()
                 .chain(mined.timestamp.timestamp().to_le_bytes())
                 .chain(&prev.hash)
@@ -153,7 +154,7 @@ mod block_tests {
     #[test]
     fn hash_identity_test() {
         assert_eq!(
-            hex::encode(Sha256::default().chain("foo").finalize()).to_uppercase(),
+            format!("{:X}", Sha256::default().chain("foo").finalize()),
             "2C26B46B68FFC68FF99B453C1D30413413422D706483BFA0F98A5E886266E7AE"
         )
     }
