@@ -24,8 +24,15 @@ impl Blockchain {
     }
 
     fn is_valid_hash_chain(chain: &Vec<Block>) -> bool {
+        // should be false when:
+        // 1. there are blocks with invalid pointers to previous hash
+        // 2. there are blocks with invalid hashes
+        // 3. there are blocks with difficulty jumps
         for (i, block) in chain.iter().enumerate().skip(1) {
-            if &block.prev != &chain[i - 1].hash || !block.valid_hash() {
+            if &block.prev != &chain[i - 1].hash
+                || !block.valid_hash()
+                || (chain[i - 1].diff as isize - block.diff as isize).abs() > 1
+            {
                 return false;
             }
         }
@@ -173,6 +180,38 @@ mod blockchain_tests {
     }
 
     #[test]
+    fn blockchain_is_not_replaced_by_chain_with_diff_jump() {
+        // create chain
+        let mut bc = Blockchain::new();
+        let mut invalid = Blockchain::new();
+
+        // create and add valid 2nd block
+        let a_data = vec![0, 1, 2];
+        bc.add_block(&a_data);
+        invalid.add_block(&a_data);
+
+        // create and add invalid 3rd block to longer chain
+        let b_data = vec![3, 4, 5];
+        // we're more interested in lower diffs, but should also invalidate higher diff jumps
+        let invalid_diff = bc.chain.last().unwrap().diff - 3;
+        let last_hash = &bc.chain.last().unwrap().hash;
+        invalid.chain.push(Block::new(
+            last_hash.to_owned(),
+            Block::to_hash(last_hash, &Utc::now(), 0, invalid_diff, &b_data),
+            0,
+            invalid_diff,
+            b_data,
+        ));
+
+        // store original chain, attempt to replace by longer but invalid
+        let original = &bc.chain.to_owned();
+        bc.replace(&invalid.chain);
+
+        // should not replace
+        assert_eq!(&bc.chain, original);
+    }
+
+    #[test]
     fn blockchain_is_not_replaced_by_invalid_chain() {
         // create chain
         let mut bc = Blockchain::new();
@@ -245,12 +284,13 @@ mod blockchain_tests {
             total = times.iter().sum();
             mean = total / times.len() as i64;
 
-            println!(
-                "Time to mine block: {}ms. Difficulty: {}. Average time: {}ms.",
-                delta,
-                bc.chain.last().unwrap().diff,
-                mean
-            );
+            // println!("Iterations left: {}", 100 - i);
+            // println!(
+            //     "Time to mine block: {}ms. Difficulty: {}. Average time: {}ms.",
+            //     delta,
+            //     bc.chain.last().unwrap().diff,
+            //     mean
+            // );
         }
 
         assert!(mean <= MINE_RATE + 100);

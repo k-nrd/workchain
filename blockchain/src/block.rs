@@ -1,4 +1,5 @@
 use crate::config::MINE_RATE;
+use crate::utils::hex_to_binary;
 use chrono::{DateTime, Duration, Utc};
 use sha2::{Digest, Sha256};
 
@@ -43,7 +44,7 @@ impl Block {
         let mut diff = prev_block.diff;
         let mut hash = Block::to_hash(&prev_block.hash, &timestamp, nonce, diff, data);
 
-        while hash[0..diff] != "0".repeat(diff) {
+        while hex_to_binary(&hash)[0..diff] != "0".repeat(diff) {
             nonce += 1;
             timestamp = Utc::now();
             diff = Block::adjust_diff(prev_block, &timestamp);
@@ -147,16 +148,20 @@ mod block_tests {
         assert_eq!(mined.data, data);
         assert_eq!(mined.prev, prev.hash);
         assert_eq!(mined.hash, mined_hash);
-        println!("{}", mined.diff);
-        assert_eq!(mined.hash[0..mined.diff], "0".repeat(mined.diff))
+        assert_eq!(hex_to_binary(&mined.hash)[0..mined.diff], "0".repeat(mined.diff))
     }
 
     #[test]
     fn hash_identity_test() {
+        let hex = format!("{:X}", Sha256::default().chain("foo").finalize());
         assert_eq!(
-            format!("{:X}", Sha256::default().chain("foo").finalize()),
+            hex,
             "2C26B46B68FFC68FF99B453C1D30413413422D706483BFA0F98A5E886266E7AE"
-        )
+        );
+        assert_eq!(
+            hex_to_binary(&hex), 
+            "0010110000100110101101000110101101101000111111111100011010001111111110011001101101000101001111000001110100110000010000010011010000010011010000100010110101110000011001001000001110111111101000001111100110001010010111101000100001100010011001101110011110101110"
+            )
     }
 
     #[test]
