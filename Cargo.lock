@@ -289,6 +289,7 @@ version = "0.1.0"
 dependencies = [
  "actix-rt",
  "actix-web",
+ "blockchain",
  "pretty_env_logger",
 ]
 
@@ -390,6 +391,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "hex",
+ "serde",
  "sha2",
 ]
 

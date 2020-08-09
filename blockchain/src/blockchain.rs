@@ -2,7 +2,7 @@ use crate::block::Block;
 use crate::config::MINE_RATE;
 use chrono::{DateTime, Duration, Utc};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Blockchain {
     pub chain: Vec<Block>,
 }

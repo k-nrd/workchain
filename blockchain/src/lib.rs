@@ -1,4 +1,4 @@
-pub mod block;
-mod blockchain;
-pub mod config;
-pub mod utils;
+mod block;
+pub mod blockchain;
+mod config;
+mod utils;
