@@ -1,8 +1,9 @@
 use crate::block::Block;
 use crate::config::MINE_RATE;
 use chrono::{DateTime, Duration, Utc};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Blockchain {
     pub chain: Vec<Block>,
 }

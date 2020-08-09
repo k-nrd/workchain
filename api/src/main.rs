@@ -11,7 +11,7 @@ async fn index(req: HttpRequest, name: web::Path<String>) -> String {
 }
 
 #[get("/api/blocks")]
-async fn get_blocks(_req: HttpRequest) -> String {
+async fn get_blocks(_req: HttpRequest, chain: web::Data<Blockchain>) -> String {
     unimplemented!();
 }
 
@@ -23,8 +23,9 @@ async fn main() -> io::Result<()> {
     // we need to use actix to handle chain operations asynchronously
     let bc = Blockchain::new();
 
-    HttpServer::new(|| {
+    HttpServer::new(move || {
         App::new()
+            .data(bc.clone())
             .wrap(middleware::Compress::default())
             .wrap(middleware::Logger::default())
             .service(index)

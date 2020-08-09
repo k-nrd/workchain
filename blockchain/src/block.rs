@@ -2,8 +2,9 @@ use crate::config::MINE_RATE;
 use crate::utils::hex_to_binary;
 use chrono::{DateTime, Duration, Utc};
 use sha2::{Digest, Sha256};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Block {
     // Headers
     pub timestamp: DateTime<Utc>,
