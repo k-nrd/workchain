@@ -36,7 +36,7 @@ impl Block {
             hash: "gen-hash".to_owned(),
             nonce: 0,
             diff: 3,
-            data: [0u8; 32].to_owned().to_vec(),
+            data: [0u8; 8].to_owned().to_vec(),
         }
     }
 
