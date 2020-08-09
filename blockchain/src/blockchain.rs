@@ -1,9 +1,7 @@
 use crate::block::Block;
-use crate::config::MINE_RATE;
-use chrono::{DateTime, Duration, Utc};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Blockchain {
     pub chain: Vec<Block>,
 }
@@ -57,6 +55,8 @@ impl Blockchain {
 #[cfg(test)]
 mod blockchain_tests {
     use super::*;
+    use crate::config::MINE_RATE;
+    use chrono::{DateTime, Duration, Utc};
 
     #[test]
     fn blockchain_starts_with_genesis() {

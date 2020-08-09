@@ -1,4 +1,4 @@
-use actix_web::{get, middleware, web, App, HttpRequest, HttpServer};
+use actix_web::{get, middleware, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use blockchain::Blockchain;
 use pretty_env_logger;
 use std::env;
@@ -11,8 +11,8 @@ async fn index(req: HttpRequest, name: web::Path<String>) -> String {
 }
 
 #[get("/api/blocks")]
-async fn get_blocks(_req: HttpRequest, chain: web::Data<Blockchain>) -> String {
-    unimplemented!();
+async fn get_blocks(_req: HttpRequest, data: web::Data<Blockchain>) -> impl Responder {
+    HttpResponse::Ok().json(data.as_ref().chain.clone())
 }
 
 #[actix_rt::main]
