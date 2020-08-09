@@ -1,4 +1,6 @@
 mod block;
-pub mod blockchain;
+mod blockchain;
 mod config;
 mod utils;
+
+pub use blockchain::Blockchain;
