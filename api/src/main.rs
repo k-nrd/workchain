@@ -1,6 +1,6 @@
 mod actor;
 
-use actix::prelude::*;
+use actix::prelude::{Actor, Addr};
 use actix_web::middleware::{Compress, Logger};
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use actor::{GetBlocks, MineBlock, Node};
@@ -8,6 +8,7 @@ use blockchain::Blockchain;
 use pretty_env_logger;
 use std::env;
 use std::io;
+use tracing::trace;
 
 #[get("/api/blocks")]
 async fn get_blocks(node_addr: web::Data<Addr<Node>>) -> impl Responder {
@@ -19,6 +20,7 @@ async fn get_blocks(node_addr: web::Data<Addr<Node>>) -> impl Responder {
 
 #[post("/api/mine")]
 async fn mine_block(node_addr: web::Data<Addr<Node>>, body: web::Json<Vec<u8>>) -> impl Responder {
+    trace!("{:#?}", body.clone());
     match node_addr.as_ref().send(MineBlock(body.clone())).await {
         Ok(res) => HttpResponse::Ok().json(res.unwrap()),
         Err(err) => HttpResponse::from_error(err.into()),

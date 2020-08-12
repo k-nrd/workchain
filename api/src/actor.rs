@@ -19,7 +19,6 @@ impl Handler<GetBlocks> for Node {
     type Result = Result<Vec<Block>, std::io::Error>;
 
     fn handle(&mut self, _msg: GetBlocks, _ctx: &mut Context<Self>) -> Self::Result {
-        println!("Getting blocks");
         Ok(self.0.chain.clone())
     }
 }
@@ -28,7 +27,7 @@ impl Handler<MineBlock> for Node {
     type Result = Result<Block, std::io::Error>;
 
     fn handle(&mut self, msg: MineBlock, _ctx: &mut Context<Self>) -> Self::Result {
-        println!("Mining new block");
+        // we should parse the Vec<u8> encoded data here, if needed
         self.0.add_block(&msg.0);
         Ok(self.0.chain.last().unwrap().clone())
     }
