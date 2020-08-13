@@ -7,6 +7,12 @@ impl Actor for Node {
     type Context = Context<Self>;
 }
 
+impl Default for Node {
+    fn default() -> Self {
+        Node(Blockchain::new())
+    }
+}
+
 #[derive(Message)]
 #[rtype(result = "Result<Vec<Block>, std::io::Error>")]
 pub struct GetBlocks;

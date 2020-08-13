@@ -4,9 +4,8 @@ use actix::prelude::{Actor, Addr};
 use actix_web::middleware::{Compress, Logger};
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use actor::{GetBlocks, MineBlock, Node};
-use blockchain::Blockchain;
+use dotenv;
 use pretty_env_logger;
-use std::env;
 use std::io;
 use tracing::trace;
 
@@ -29,11 +28,11 @@ async fn mine_block(node_addr: web::Data<Addr<Node>>, body: web::Json<Vec<u8>>) 
 
 #[actix_rt::main]
 async fn main() -> io::Result<()> {
-    env::set_var("RUST_LOG", "actix_server=info,actix_web=info");
+    dotenv::dotenv().ok();
     pretty_env_logger::init();
 
     // we need to use actix to handle chain operations asynchronously
-    let addr = Node(Blockchain::new()).start();
+    let addr = Node::default().start();
 
     HttpServer::new(move || {
         App::new()
@@ -43,7 +42,10 @@ async fn main() -> io::Result<()> {
             .service(get_blocks)
             .service(mine_block)
     })
-    .bind("127.0.0.1:8080")?
+    .bind(format!(
+        "127.0.0.1:{}",
+        dotenv::var("DEFAULT_PORT").unwrap_or(3000.to_string())
+    ))?
     .workers(1)
     .run()
     .await
