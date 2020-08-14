@@ -56,7 +56,7 @@ async fn main() -> io::Result<()> {
             .service(mine_block)
     })
     .bind(format!(
-        "127.0.0.1:{}",
+        "0.0.0.0:{}",
         dotenv::var("DEFAULT_PORT").unwrap_or(3000.to_string())
     ))?
     .workers(1)
