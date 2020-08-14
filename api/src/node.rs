@@ -1,30 +1,28 @@
+use crate::pubsub::{PubSub, Subscribe};
 use actix::prelude::*;
 use blockchain::{Block, Blockchain};
 use std::io;
 
-const DEFAULT_CHANNELS: [&'static str; 2] = ["main", "test"];
-
 pub struct Node {
     pub blockchain: Blockchain,
-    pub redis: redis::Client,
-    pub channels: Vec<&'static str>,
+    pub pubsub: Addr<PubSub>,
 }
 
 impl Actor for Node {
     type Context = Context<Self>;
+
+    fn started(&mut self, _ctx: &mut Context<Self>) {
+        self.pubsub.do_send(Subscribe("main"));
+    }
 }
 
 impl Node {
-    fn new(blockchain: Blockchain, redis: redis::Client, channels: Vec<&'static str>) -> Self {
-        Node {
-            blockchain,
-            redis,
-            channels,
-        }
+    fn new(blockchain: Blockchain, pubsub: Addr<PubSub>) -> Self {
+        Node { blockchain, pubsub }
     }
 
-    pub fn from_client(redis: redis::Client) -> Self {
-        Node::new(Blockchain::new(), redis, DEFAULT_CHANNELS.to_vec())
+    pub fn from_pubsub(pubsub: Addr<PubSub>) -> Self {
+        Node::new(Blockchain::new(), pubsub)
     }
 }
 

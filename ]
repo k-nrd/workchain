@@ -6,7 +6,6 @@ use actix_web::middleware::{Compress, Logger};
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use dotenv;
 use node::{GetBlocks, MineBlock, Node};
-use pretty_env_logger;
 use pubsub::PubSub;
 use serde::Deserialize;
 use std::io;
@@ -41,17 +40,17 @@ async fn mine_block(node_addr: web::Data<Addr<Node>>, body: web::Json<ReqData>) 
 #[actix_rt::main]
 async fn main() -> io::Result<()> {
     dotenv::dotenv().ok();
-    pretty_env_logger::init();
+    env_logger::init();
 
-    // Create an actor to handle PubSub with Redis, get its address.
-    let pubsub = PubSub::from_addr("localhost:6379").start();
+    // Create a redis client for our node to use.
+    let client = redis::Client::open("redis://127.0.0.1/").unwrap();
 
     // Create our Node Actor and get its address.
-    let node = Node::from_pubsub(pubsub).start();
+    let addr = Node::from_client(client).start();
 
     HttpServer::new(move || {
         App::new()
-            .data(node.clone())
+            .data(addr.clone())
             .wrap(Compress::default())
             .wrap(Logger::default())
             .service(get_blocks)
