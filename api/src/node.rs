@@ -1,6 +1,5 @@
 use actix::prelude::*;
 use blockchain::{Block, Blockchain};
-use std::collections::HashSet;
 use std::io;
 
 const DEFAULT_CHANNELS: [&'static str; 2] = ["main", "test"];
@@ -8,7 +7,7 @@ const DEFAULT_CHANNELS: [&'static str; 2] = ["main", "test"];
 pub struct Node {
     pub blockchain: Blockchain,
     pub redis: redis::Client,
-    pub channels: HashSet<&'static str>,
+    pub channels: Vec<&'static str>,
 }
 
 impl Actor for Node {
@@ -16,7 +15,7 @@ impl Actor for Node {
 }
 
 impl Node {
-    fn new(blockchain: Blockchain, redis: redis::Client, channels: HashSet<&'static str>) -> Self {
+    fn new(blockchain: Blockchain, redis: redis::Client, channels: Vec<&'static str>) -> Self {
         Node {
             blockchain,
             redis,
@@ -25,11 +24,7 @@ impl Node {
     }
 
     pub fn from_client(redis: redis::Client) -> Self {
-        Node::new(
-            Blockchain::new(),
-            redis,
-            DEFAULT_CHANNELS.to_vec().into_iter().collect(),
-        )
+        Node::new(Blockchain::new(), redis, DEFAULT_CHANNELS.to_vec())
     }
 }
 
