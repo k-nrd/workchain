@@ -1,28 +1,18 @@
-use crate::pubsub::{PubSub, Subscribe};
 use actix::prelude::*;
 use blockchain::{Block, Blockchain};
 use std::io;
 
 pub struct Node {
     pub blockchain: Blockchain,
-    pub pubsub: Addr<PubSub>,
 }
 
 impl Actor for Node {
     type Context = Context<Self>;
-
-    fn started(&mut self, _ctx: &mut Context<Self>) {
-        self.pubsub.do_send(Subscribe("main"));
-    }
 }
 
 impl Node {
-    fn new(blockchain: Blockchain, pubsub: Addr<PubSub>) -> Self {
-        Node { blockchain, pubsub }
-    }
-
-    pub fn from_pubsub(pubsub: Addr<PubSub>) -> Self {
-        Node::new(Blockchain::new(), pubsub)
+    pub fn new(blockchain: Blockchain) -> Self {
+        Node { blockchain }
     }
 }
 

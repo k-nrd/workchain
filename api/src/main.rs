@@ -1,16 +1,17 @@
 mod node;
-mod pubsub;
 
-use actix::prelude::{Actor, Addr};
+#[macro_use]
+extern crate log;
+
+use actix::prelude::*;
 use actix_web::middleware::{Compress, Logger};
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use blockchain::Blockchain;
 use dotenv;
 use node::{GetBlocks, MineBlock, Node};
 use pretty_env_logger;
-use pubsub::PubSub;
 use serde::Deserialize;
 use std::io;
-use tracing::trace;
 
 #[derive(Deserialize, Clone, Debug)]
 struct ReqData {
@@ -21,7 +22,7 @@ struct ReqData {
 async fn get_blocks(node_addr: web::Data<Addr<Node>>) -> impl Responder {
     match node_addr.as_ref().send(GetBlocks).await {
         Ok(res) => HttpResponse::Ok().json(res.unwrap()),
-        Err(err) => HttpResponse::from_error(err.into()),
+        Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
 
@@ -34,7 +35,7 @@ async fn mine_block(node_addr: web::Data<Addr<Node>>, body: web::Json<ReqData>) 
         .await
     {
         Ok(res) => HttpResponse::Ok().json(res.unwrap()),
-        Err(err) => HttpResponse::from_error(err.into()),
+        Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
 
@@ -43,11 +44,8 @@ async fn main() -> io::Result<()> {
     dotenv::dotenv().ok();
     pretty_env_logger::init();
 
-    // Create an actor to handle PubSub with Redis, get its address.
-    let pubsub = PubSub::from_addr("localhost:6379").start();
-
     // Create our Node Actor and get its address.
-    let node = Node::from_pubsub(pubsub).start();
+    let node = Node::new(Blockchain::new()).start();
 
     HttpServer::new(move || {
         App::new()
