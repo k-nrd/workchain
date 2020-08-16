@@ -1,6 +1,9 @@
-use actix::prelude::*;
-use blockchain::{Block, Blockchain};
-use std::io;
+use {
+    actix::prelude::*,
+    blockchain::{Block, Blockchain},
+    redis_async::{error, resp, resp::FromResp},
+    std::io,
+};
 
 pub struct Node {
     pub blockchain: Blockchain,
@@ -42,5 +45,14 @@ impl Handler<MineBlock> for Node {
         // then return added block
         self.blockchain.add_block(&msg.0);
         Ok(self.blockchain.chain.last().unwrap().clone())
+    }
+}
+
+impl StreamHandler<Result<resp::RespValue, error::Error>> for Node {
+    fn handle(&mut self, msg: Result<resp::RespValue, error::Error>, _ctx: &mut Context<Self>) {
+        println!("Stream handler is running!");
+        if let Ok(message) = msg {
+            println!("Got message: {}", String::from_resp(message).unwrap())
+        }
     }
 }

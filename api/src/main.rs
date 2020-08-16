@@ -1,8 +1,5 @@
 mod node;
 
-#[macro_use]
-extern crate log;
-
 use actix::prelude::*;
 use actix_web::middleware::{Compress, Logger};
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
@@ -28,7 +25,7 @@ async fn get_blocks(node_addr: web::Data<Addr<Node>>) -> impl Responder {
 
 #[post("/api/mine")]
 async fn mine_block(node_addr: web::Data<Addr<Node>>, body: web::Json<ReqData>) -> impl Responder {
-    trace!("{:#?}", body.clone());
+    println!("{:#?}", body.clone());
     match node_addr
         .as_ref()
         .send(MineBlock(body.data.as_bytes().to_vec()))
@@ -59,7 +56,6 @@ async fn main() -> io::Result<()> {
         "0.0.0.0:{}",
         dotenv::var("DEFAULT_PORT").unwrap_or(3000.to_string())
     ))?
-    .workers(1)
     .run()
     .await
 }

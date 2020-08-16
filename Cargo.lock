@@ -325,20 +325,16 @@ version = "0.1.0"
 dependencies = [
  "actix",
  "actix-rt",
- "actix-utils",
  "actix-web",
- "backoff",
  "blockchain",
- "derive_more",
  "dotenv",
- "futures-util",
+ "failure",
+ "futures",
  "log",
  "pretty_env_logger",
  "redis",
  "redis-async",
  "serde",
- "tokio",
- "tokio-util 0.3.1",
 ]
 
 [[package]]
@@ -442,16 +438,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_urlencoded",
-]
-
-[[package]]
-name = "backoff"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "721c249ab59cbc483ad4294c9ee2671835c1e43e9ffc277e6b4ecfef733cfdc5"
-dependencies = [
- "instant",
- "rand",
 ]
 
 [[package]]
@@ -1540,9 +1526,9 @@ dependencies = [
 
 [[package]]
 name = "redis-async"
-version = "0.6.2"
+version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be32bbe0f3a4034e7c0804132b107bb4a85e1cdc4564eee7f1b39b8cf71b84f1"
+checksum = "32c2f29b2a86ac0be0ba2680118d8280b8c7743a6fb2c11d2d04bb9ea41b94f1"
 dependencies = [
  "bytes",
  "futures-channel",
@@ -1550,7 +1536,7 @@ dependencies = [
  "futures-util",
  "log",
  "tokio",
- "tokio-util 0.2.0",
+ "tokio-util 0.3.1",
 ]
 
 [[package]]
