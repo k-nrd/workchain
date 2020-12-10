@@ -1,7 +1,9 @@
 use {
     actix::prelude::*,
     blockchain::{Block, Blockchain},
-    redis_async::{error, resp, resp::FromResp},
+    dotenv,
+    futures::prelude::*,
+    redis_async::{client, error, resp, resp::FromResp},
     std::io,
 };
 
@@ -11,6 +13,22 @@ pub struct Node {
 
 impl Actor for Node {
     type Context = Context<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
+        // sync blockchain,
+        let redis_addr = format!("0.0.0.0:{}", dotenv::var("REDIS_PORT").unwrap());
+
+        let stream = async move {
+            let conn = client::pubsub_connect(&redis_addr.parse().unwrap())
+                .await
+                .unwrap();
+
+            conn.subscribe("TEST").await.unwrap()
+        }
+        .flatten_stream();
+
+        ctx.add_stream(stream);
+    }
 }
 
 impl Node {
